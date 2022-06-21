@@ -28,6 +28,7 @@ impl Lexer {
     fn get_next_char(&mut self) -> Option<char> {
         let next_char_index = usize::from(self.current_position);
 
+        self.advance();
         self.source_code.chars().nth(next_char_index + 1)
     }
 
@@ -251,10 +252,37 @@ impl Lexer {
                     Some('/') => {
                         while let Some(comment_char) = self.get_next_char() {
                             if comment_char == '\n' || self.is_at_end() {
+                                self.advance();
                                 break;
                             }
+                        }
+                    }
+                    Some('*') => {
+                        while let Some(long_comment_char) = self.get_next_char() {
+                            if long_comment_char == '\n' {
+                                self.line += 1;
+                                continue;
+                            }
 
-                            self.advance()
+                            if long_comment_char == '*' {
+                                match self.get_next_char() {
+                                    Some('/') => {
+                                        self.advance();
+                                        break;
+                                    }
+                                    _ => {
+                                        errors.push(CompilationError {
+                                            line: self.line,
+                                            message: format!(
+                                                "Unterminated multi-line comment at line {}",
+                                                self.line
+                                            ),
+                                        });
+                                        self.has_error = true;
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                     _ => {
@@ -264,7 +292,6 @@ impl Lexer {
                             literal: None,
                             line: usize::from(self.line),
                         });
-                        self.advance();
                     }
                 }
             }
