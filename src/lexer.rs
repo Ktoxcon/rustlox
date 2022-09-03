@@ -260,7 +260,7 @@ impl Lexer {
                     Some('*') => {
                         while let Some(long_comment_char) = self.get_next_char() {
                             if long_comment_char == '\n' {
-                                self.line += 1;
+                                self.advance();
                                 continue;
                             }
 
@@ -292,6 +292,34 @@ impl Lexer {
                             literal: None,
                             line: usize::from(self.line),
                         });
+                    }
+                }
+            }
+
+            '"' => {
+                let mut literal_value = String::from("");
+
+                while let Some(literal_char) = self.get_next_char() {
+                    match literal_char {
+                        '"' => {
+                            self.advance();
+                            tokens.push(Token {
+                                token_type: TokenType::StringLiteral,
+                                lexeme: String::from(""),
+                                literal: Some(literal_value.clone()),
+                                line: self.line,
+                            });
+                            break;
+                        }
+                        '\n' => {
+                            errors.push(CompilationError {
+                                line: self.line,
+                                message: format!("Unexpected line break at line: {}", self.line),
+                            });
+                            self.has_error = true;
+                            self.advance();
+                        }
+                        _ => literal_value.push(literal_char),
                     }
                 }
             }

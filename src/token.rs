@@ -26,6 +26,8 @@ pub enum TokenType {
     Minus,
     Star,
 
+    StringLiteral,
+
     Eof,
 }
 
